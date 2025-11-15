@@ -192,6 +192,16 @@ async def giveme(interaction: discord.Interaction):
 @app_commands.checks.has_permissions(kick_members=True)
 async def kick(interaction: discord.Interaction, member: discord.Member, reason: str = "Ingen anledning"):
     await member.kick(reason=reason)
+    # Logga åtgärden
+    log_channel = discord.utils.get(interaction.guild.text_channels, name="mod-log")
+    if log_channel:
+        embed = discord.Embed(
+            title="Medlem kickad",
+            description=f"{member} har blivit kickad. Orsak: {reason}",
+            color=discord.Color.red(),
+            timestamp=datetime.utcnow()
+        )
+        await log_channel.send(embed=embed)
     await interaction.response.send_message(f"👢 {member} sparkades. ({reason})")
 
 @bot.tree.command(name="ban", description="Bannar en användare")
@@ -223,55 +233,4 @@ async def untimeout(interaction: discord.Interaction, member: discord.Member):
 # ==============================
 # Nuke (endast ägare)
 # ==============================
-@bot.tree.command(name="nuke", description="Raderar alla kanaler och roller (endast ägaren)")
-@app_commands.checks.has_permissions(administrator=True)
-async def nuke(interaction: discord.Interaction):
-    if interaction.user.id != OWNER_ID:
-        await interaction.response.send_message("❌ Du får inte använda detta kommando.", ephemeral=True)
-        return
-
-    guild = interaction.guild
-    await interaction.response.send_message("💣 Startar NUKE... detta tar några sekunder.", ephemeral=True)
-
-    # Radera alla kanaler
-    for c in guild.channels:
-        try:
-            await c.delete()
-        except:
-            pass
-
-    # Radera alla roller utom @everyone
-    for role in guild.roles:
-        if role.name != "@everyone":
-            try:
-                await role.delete()
-            except:
-                pass
-
-    # Skapa ny kanal
-    new_channel = await guild.create_text_channel("rebooted-server")
-    await new_channel.send("💥 Servern har återställts! (NUKE utförd av ägaren)")
-
-# ==============================
-# Automatisk nattlig omstart
-# ==============================
-@tasks.loop(minutes=1)
-async def nightly_restart():
-    now = datetime.now()
-    if now.hour == 3 and now.minute == 0 and DEPLOY_HOOK_URL:
-        print("🕒 Automatisk omstart (Render Deploy Hook)")
-        try:
-            requests.post(DEPLOY_HOOK_URL)
-            print("✅ Deploy Hook kallad.")
-        except Exception as e:
-            print(f"❌ Kunde inte kalla Deploy Hook: {e}")
-
-# ==============================
-# Starta boten
-# ==============================
-if __name__ == "__main__":
-    if not TOKEN:
-        print("❌ Ingen DISCORD_BOT_TOKEN hittades i miljövariabler.")
-    else:
-        print("🚀 Startar Discord-bot...")
-        bot.run(TOKEN)
+@bot.tree.command(name="nuke
